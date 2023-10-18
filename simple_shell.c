@@ -7,50 +7,33 @@
 
 #define MAX_COMMAND_LENGTH 100
 
-int main(void) {
-    char command[MAX_COMMAND_LENGTH];
-    int pid, status;
+int main(void)
+{
+    char *command = NULL;
+    size_t command_length = 0;
+    ssize_t read;
 
     while (1) {
-        printf("$ ");
+        write(STDOUT_FILENO, "#cisfun$ ", 2);
         fflush(stdout);
 
-        if (fgets(command, MAX_COMMAND_LENGTH, stdin) == NULL) {
+        if ((read = getline(&command, &command_length, stdin)) == -1) {
             /* End of file condition (Ctrl+D) */
-            printf("\n");
+            write(STDOUT_FILENO, "\n", 1);
             break;
         }
 
-        command[strcspn(command, "\n")] = '\0';
-
-        if (strcmp(command, "exit") == 0) {
-            break;
-        }
+        command[read - 1] = '\0';
 
         if (access(command, X_OK) != 0) {
-            fprintf(stderr, "Command not found: %s\n", command);
+            write(STDERR_FILENO, "./shell: No such file or directory", 19);
+            write(STDERR_FILENO, command, strlen(command));
+            write(STDERR_FILENO, "\n", 1);
             continue;
-        }
-
-        pid = fork();
-
-        if (pid == -1) {
-            perror("fork");
-            break;
-        } else if (pid == 0) {
-            /* Child process */
-            if (execlp(command, command, NULL) == -1) {
-                perror("execlp");
-                _exit(EXIT_FAILURE);
-            }
-        } else {
-            /* Parent process */
-            if (waitpid(pid, &status, 0) == -1) {
-                perror("waitpid");
-                break;
-            }
-        }
+        } 
     }
+
+    free(command);
 
     return 0;
 }
