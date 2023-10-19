@@ -1,3 +1,0 @@
-Simple Shell Team Project
-
-
